@@ -1,9 +1,14 @@
 class Sensor
 
   attr_accessor :id
-
+  
   def initialize(id = 0)
     @id = id
+    @sample_data = Array.new
+  end
+
+  def sample_data= (data)
+    @sample_data = data.reverse
   end
 
   def forward_step
@@ -13,7 +18,7 @@ class Sensor
   end
 
   def sample
-    return nil
+    return @sample_data.pop
   end
 
   def compute 

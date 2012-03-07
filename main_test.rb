@@ -1,9 +1,6 @@
 require 'main'
 require 'test/unit'
 
-#class Object < Test::Unit::TestCase end
-
-
 class MainTest < Test::Unit::TestCase
 
   def setup
@@ -14,25 +11,30 @@ class MainTest < Test::Unit::TestCase
   def teardown
   end
 
-  def test_basic_function
-    def test_sampling
-      data = @sensor.sample
-      assert_not_nil(data)
-    end
-    test_sampling
-
-    def test_computation
-    end
+  def test_sampling
+    sensor = Sensor.new
+    data = sensor.sample
+    assert_nil(data)
     
-    def test_communication
-       @base_station.receive(3)
-      assert_equal(3, @base_station.received_data) 
-
-      @sensor.send(2)
-      assert_equal(2, @base_station.received_data)
+    sensor.sample_data = [1,2,3,4,5]
+    for expected_data in 1..5
+      assert_equal(expected_data, sensor.sample)
     end
-    test_communication 
+    assert_nil(sensor.sample)
+ end
 
+  def test_computation
   end
+    
+  def test_communication
+    @base_station.receive(3)
+    assert_equal(3, @base_station.received_data) 
+    
+    @sensor.send(2)
+    assert_equal(2, @base_station.received_data)
+  end
+
 end
+
+
 
