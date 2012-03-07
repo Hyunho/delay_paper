@@ -1,10 +1,11 @@
 class Sensor
 
-  attr_accessor :id
+  attr_accessor :id, :sent_count
   
   def initialize(id = 0)
     @id = id
     @sample_data = Array.new
+    @sent_count = 0
   end
 
   def sample_data= (data)
@@ -12,9 +13,9 @@ class Sensor
   end
 
   def forward_step
-    sample
-    comutation
-    send
+    data = self.sample
+    compute
+    send(data)
   end
 
   def sample
@@ -25,7 +26,9 @@ class Sensor
   end
   
   def send(data)
+    @sent_count = @sent_count +1
     BaseStation.instance.receive(data)
+    
   end
 end
 

@@ -4,7 +4,6 @@ require 'test/unit'
 class MainTest < Test::Unit::TestCase
 
   def setup
-    @base_station = BaseStation.instance
     @sensor = Sensor.new
   end
 
@@ -12,6 +11,8 @@ class MainTest < Test::Unit::TestCase
   end
 
   def test_sampling
+
+   
     sensor = Sensor.new
     data = sensor.sample
     assert_nil(data)
@@ -27,14 +28,29 @@ class MainTest < Test::Unit::TestCase
   end
     
   def test_communication
-    @base_station.receive(3)
-    assert_equal(3, @base_station.received_data) 
+    base_station = BaseStation.instance
+    sensor = Sensor.new
+
+    base_station.receive(3)
+    assert_equal(3, base_station.received_data) 
     
-    @sensor.send(2)
-    assert_equal(2, @base_station.received_data)
+    sensor.send(2)
+    assert_equal(1, sensor.sent_count)
+    assert_equal(2, base_station.received_data)
   end
 
 end
 
+class BaseStationTest 
+end
 
+
+def global_test
+  sensor = Sensor.new
+  sensor.sample_data = [1,2,3,4,5,6,7,8,9]
+  sensor.forward_step
+  puts sensor.sent_count
+end
+
+global_test
 
