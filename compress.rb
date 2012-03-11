@@ -1,11 +1,50 @@
 require 'matrix'
 
-def haar2(matrix_data)
-  wavelet_matrix = Matrix[[1,1],[1,-1]]
-  return matrix_data * wavelet_matrix
+
+class Array
+
+  def Array.fast_haar_transform array
+    average_signal = (1..array.size/2).map {|n| (array[(2*n-2)] + array[2*n-1]) /2.0 }
+    detail_signal = (1..array.size/2).map {|n| (array[(2*n-2)] - array[2*n-1]) / 2.0 }
+    return average_signal + detail_signal
+  end
+
+  def Array.modified_fast_haar_transform array
+    average_signal = (1..array.size/4).map do |n|
+      ((array[(4*n-4)] + array[4*n-3] + array[4*n-2] + array[4*n-1])) / 4.00
+    end
+
+    detail_signal = (1..array.size/4).map do |n|
+      ((array[(4*n-4)] + array[4*n-3]) - (array[4*n-2] + array[4*n-1])) / 4.00
+    end
+
+    return average_signal + detail_signal
+  end
 end
 
-def fast_haar_transform_on_row matrix_data
+
+class Matrix
+  def Matrix.to_1D_array matrix
+    queue = Array.new
+    result = Array.new
+    queue.insert(0, matrix.to_a)
+
+    # using breadth first search 
+    while !queue.empty?
+      item = queue.pop
+      if item.class == Array
+        item.each do |vertex|
+          queue.insert(0, vertex)
+        end  
+      else
+        result << item
+      end
+    end
+    return result
+  end
+end
+
+def fast_haar_transform data
   sum_matrix = Matrix.column_vector([1, 1])
   different_matrix = Matrix.column_vector([1, -1])
   average_signal = matrix_data  * sum_matrix 
@@ -14,16 +53,7 @@ def fast_haar_transform_on_row matrix_data
   Matrix.row_vector[average_signal.to_a, detail_signal.to_a]
 end
 
-
-def average_signal matrix
-  sum_matrix = Matrix[[1], [1]]
-  return matrix * sum_matrix
-end
-
-def detail_signal matrix
-  different_matrix = Matrix[[1], [-1]]
-  return matrix * different_matrix 
-end
+ 
 
 
 def regression(data)

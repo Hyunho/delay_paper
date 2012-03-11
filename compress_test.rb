@@ -3,35 +3,25 @@ require 'test/unit'
 require 'matrix'
 class CompressTest < Test::Unit::TestCase
 
-  def setup
-    @test_data1 = [1,2,3,4,5,6,7,8]
+  def test_convert
+    assert_equal([2,3], Matrix.to_1D_array(Matrix.row_vector([2,3])))
+    assert_equal([2,3,3,4], Matrix.to_1D_array(Matrix[[2,3],[3,4]]))
+    assert_equal([2,3,3,4], Matrix.to_1D_array(Matrix[[2,3,3,4]]))
   end
 
 
-  def test_haar
+  def test_haar_transform_for_array
 
-
-    assert_equal(Matrix[[5]], average_signal(Matrix[[2,3]]))
-    assert_equal(Matrix[[-1]], detail_signal(Matrix[[2,3]]))
-
-    assert_equal(Matrix[[3, 7]], average_signal(Matrix[[1,2,3,4]]))
-    assert_equal(Matrix[[3, 7]], detail_signal(Matrix[[1,2,3,4]]))
-
-
-
-#    assert_equal(Matrix.row_vector([5, -1]), haar2(Matrix.row_vector([2, 3])))
-#    assert_equal(Matrix.row_vector([5, -1]), fast_haar_transform_on_row(Matrix.row_vector([2, 3])))
-
-    test_data = [3,7,5,2,8,5,4,1]
-#    assert_equal([35, -1, 3, 8, -4, 3, 3, 3, 3], haar4(test_data))
-
-
-    test_data = [ 2, 4, 6, 3,
-                  1, 2, 5, 9,
-                  8,13,15, 7,
-                  8, 9, 0, 4]
-
-
+    test_data = [ 2, 4, 6, 3, 1, 2, 5, 9,
+                  8,13,15, 7, 8, 9, 0, 4]
+    
+    assert_equal([3, 4.5, 1.5, 7, 10.5, 11, 8.5, 2,
+                  -1, 1.5, -0.5, -2, -2.5, 4, -0.5, -2], 
+                 Array.fast_haar_transform(test_data))
+                  
+    assert_equal([3.75, 4.25, 10.75, 5.25, -0.75, -2.75, -0.25, 3.25],
+                 Array.modified_fast_haar_transform(test_data))
+    
   end
 
   def test_regression
