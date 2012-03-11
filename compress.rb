@@ -1,28 +1,42 @@
 require 'matrix'
 
+module Compression
 
-class Compression
+  def Compression.haar_transform array
+    array = array.clone
+    result = Array.new
 
-  def Compression.fast_haar_transform array
-    average_signal = (1..array.size/2).map {|n| (array[(2*n-2)] + array[2*n-1]) /2.0 }
-    detail_signal = (1..array.size/2).map {|n| (array[(2*n-2)] - array[2*n-1]) / 2.0 }
-    return average_signal + detail_signal
-  end
-
-  def Compression.modified_fast_haar_transform array
-    average_signal = (1..array.size/4).map do |n|
-      ((array[(4*n-4)] + array[4*n-3] + array[4*n-2] + array[4*n-1])) / 4.00
+    while(array.size > 1)
+      average_signal = (1..array.size/2).map {|n| (array[(2*n-2)] + array[2*n-1]) /2.0 }
+      detail_signal = (1..array.size/2).map {|n| (array[(2*n-2)] - array[2*n-1]) / 2.0 }  
+      result = detail_signal + result
+      array = average_signal
     end
-
-    detail_signal = (1..array.size/4).map do |n|
-      ((array[(4*n-4)] + array[4*n-3]) - (array[4*n-2] + array[4*n-1])) / 4.00
-    end
-
-    return average_signal + detail_signal
+    return result = array + result 
   end
+  
+  def Compression.inverse_haar_transform array
+    array = array.clone
 
-  def Compression.regression array
+    average_signal = Array.new
+    detail_signal = Array.new
     
+    average_signal << array.slice!(0)
+    while(!array.empty?)    
+      detail_signal =  array.slice!(0, average_signal.size)
+
+      temp = Array.new
+      (1..average_signal.size).each do |i|
+        temp << average_signal[i-1] + detail_signal[i-1]
+        temp << average_signal[i-1] - detail_signal[i-1]
+      end
+      average_signal = temp
+    end
+    return average_signal   
+  end
+
+
+  def Compression.regression array    
     sum_v = array.reduce(:+)
     mean_v = sum_v.to_f / array.size.to_f
 
@@ -43,11 +57,23 @@ class Compression
 
     hat_b = numerator / denominator 
     hat_a = mean_v - hat_b * mean_t
-    return [hat_a, hat_b]
+    
+    return cofficient = { "hat_a" => hat_a , "hat_b" => hat_b}
   end
-  
-end
 
+  def Compression.max_error_for_regression(cofficient, data)
+    max_error = 0
+    (1..data.size).each do |i|
+      t = i
+      estimation_value = cofficient["hat_a"] + cofficient["hat_b"] * t
+      error = (estimation_value - data[i-1]).abs
+      if error > max_error
+        max_error = error
+      end
+    end
+    return max_error
+  end
+end
 
 class Matrix
   def Matrix.to_1D_array matrix
