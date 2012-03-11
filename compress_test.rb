@@ -16,11 +16,12 @@ class CompressionTest < Test::Unit::TestCase
 
     test_data = {
       "original" => [3,7,5,2,8,5,4,1], 
-      "haar_data" => [4.375,-0.125,0.75,2.0,-2.0,1.5,1.5,1.5] }
+      "haar_cofficient" => [4.375,-0.125,0.75,2.0,-2.0,1.5,1.5,1.5] }
                
-    assert_equal(test_data["haar_data"], Compression.haar_transform(test_data["original"]))
-    assert_equal(test_data["original"], Compression.inverse_haar_transform(test_data["haar_data"]))
-    
+    assert_equal(test_data["haar_cofficient"], Compression.haar_transform(test_data["original"]))
+    assert_equal(test_data["original"], Compression.inverse_haar_transform(test_data["haar_cofficient"]))
+    assert_equal(0, Compression.max_error_for_haar(test_data["haar_cofficient"],test_data["original"]))
+
     test_data = [1,2,3,4,5,6,7,8]
     cofficient = {"hat_a" => 0.0, "hat_b" => 1.0}
     assert_equal(cofficient, Compression.regression(test_data))

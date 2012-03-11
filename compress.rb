@@ -35,10 +35,23 @@ module Compression
     return average_signal   
   end
 
+  def Compression.max_error_for_haar (haar_cofficient, original)
+    transformed_data = Compression.inverse_haar_transform(haar_cofficient)
+
+    max_error = 0
+    transformed_data.each_index do |index|
+      error = (original[index] - transformed_data[index]).abs
+      if ( error > max_error)
+        max_error = error
+      end
+    end
+
+    return max_error
+  end
 
   def Compression.regression array    
     sum_v = array.reduce(:+)
-    mean_v = sum_v.to_f / array.size.to_f
+    mean_v = sum_v.to_f / array.size.to_f 
 
     sum_t = (1..array.size).reduce(:+)
     mean_t = sum_t.to_f / array.size.to_f
