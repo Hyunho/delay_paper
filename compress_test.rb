@@ -25,7 +25,7 @@ class CompressTest < Test::Unit::TestCase
   end
 
   def test_regression
-#    assert_equal([1,1],regression(@test_data1))
+    assert_equal([0.0, 1.0], Array.regression([1,2,3,4,5,6,7,8]))
   end
 end
 

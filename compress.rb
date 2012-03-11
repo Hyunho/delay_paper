@@ -20,6 +20,32 @@ class Array
 
     return average_signal + detail_signal
   end
+
+  def Array.regression array
+    
+    sum_v = array.reduce(:+)
+    mean_v = sum_v.to_f / array.size.to_f
+
+    sum_t = (1..array.size).reduce(:+)
+    mean_t = sum_t.to_f / array.size.to_f
+    
+    numerator = 0
+    (1..array.size).each do |i|
+      t=i 
+      numerator = numerator + (t - mean_t) *(array[i-1] - mean_v)
+    end
+
+    denominator = 0
+    (1..array.size).each do |i|
+      t = i
+      denominator = denominator + (t - mean_t)**2
+    end
+
+    hat_b = numerator / denominator 
+    hat_a = mean_v - hat_b * mean_t
+    return [hat_a, hat_b]
+  end
+  
 end
 
 
@@ -44,31 +70,3 @@ class Matrix
   end
 end
 
-def fast_haar_transform data
-  sum_matrix = Matrix.column_vector([1, 1])
-  different_matrix = Matrix.column_vector([1, -1])
-  average_signal = matrix_data  * sum_matrix 
-  detail_signal = matrix_data  * different_matrix 
-  
-  Matrix.row_vector[average_signal.to_a, detail_signal.to_a]
-end
-
- 
-
-
-def regression(data)
-
-  sum_v = 0
-  for value in data
-    sum_v = sum_v + value
-  end
-  mean_v = sum_v / data.size
-
-  sum_t =0
-  for i in 1..data.size
-    sum_t = sum_t + i
-  end
-  mean_t = sum_t / data.size
-
-  return [mean_v, mean_t]
-end
