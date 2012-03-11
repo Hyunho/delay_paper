@@ -1,15 +1,15 @@
 require 'matrix'
 
 
-class Array
+class Compression
 
-  def Array.fast_haar_transform array
+  def Compression.fast_haar_transform array
     average_signal = (1..array.size/2).map {|n| (array[(2*n-2)] + array[2*n-1]) /2.0 }
     detail_signal = (1..array.size/2).map {|n| (array[(2*n-2)] - array[2*n-1]) / 2.0 }
     return average_signal + detail_signal
   end
 
-  def Array.modified_fast_haar_transform array
+  def Compression.modified_fast_haar_transform array
     average_signal = (1..array.size/4).map do |n|
       ((array[(4*n-4)] + array[4*n-3] + array[4*n-2] + array[4*n-1])) / 4.00
     end
@@ -21,7 +21,7 @@ class Array
     return average_signal + detail_signal
   end
 
-  def Array.regression array
+  def Compression.regression array
     
     sum_v = array.reduce(:+)
     mean_v = sum_v.to_f / array.size.to_f
