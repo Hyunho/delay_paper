@@ -35,19 +35,6 @@ module Compression
     return average_signal   
   end
 
-  def Compression.max_error_for_haar (haar_cofficient, original)
-    transformed_data = Compression.inverse_haar_transform(haar_cofficient)
-
-    max_error = 0
-    transformed_data.each_index do |index|
-      error = (original[index] - transformed_data[index]).abs
-      if ( error > max_error)
-        max_error = error
-      end
-    end
-
-    return max_error
-  end
 
   def Compression.regression array    
     sum_v = array.reduce(:+)
@@ -74,13 +61,17 @@ module Compression
     return cofficient = { "hat_a" => hat_a , "hat_b" => hat_b}
   end
 
-  def Compression.max_error_for_regression(cofficient, data)
+  def Compression.inverse_regression cofficient, size
+    data = Array.new
+    (1..size).each { |t| data << cofficient["hat_a"] + cofficient["hat_b"] * t}
+    return data
+  end
+
+  def Compression.max_error original_data, inversed_data
     max_error = 0
-    (1..data.size).each do |i|
-      t = i
-      estimation_value = cofficient["hat_a"] + cofficient["hat_b"] * t
-      error = (estimation_value - data[i-1]).abs
-      if error > max_error
+    inversed_data.each_index do |index|
+      error = (original_data[index] - inversed_data[index]).abs
+      if ( error > max_error)
         max_error = error
       end
     end
@@ -93,7 +84,7 @@ class Matrix
     queue = Array.new
     result = Array.new
     queue.insert(0, matrix.to_a)
-
+    
     # using breadth first search 
     while !queue.empty?
       item = queue.pop
