@@ -1,47 +1,45 @@
 require 'matrix'
 
 
-class Node
-  attr_accessor :value
-end
-
-class InternalNode < Node
-
-  attr_accessor :left_child, :right_child
-
-  def children
-    nodes = Array.new
-    nodes << @left_child unless @left_child.nil?    
-    nodes << @right_child unless @right_child.nil?
-    return nodes
-  end
-end
-
-
-class DataNode < Node
-  
-  @original_value
-  def value= v
-    @original_value = v if @original_value.nil?
-    @value = v     
-  end
-
-  def value 
-    return @value
-  end
-
-  def error
-    return (@original_value - @value).abs
-  end
-
-  
-end
-
-
 # For wavelet-based data Reduction, we use error tree
 #
-class ErrorTree
+class ErrorTree # for nested class
+   
+  class Node
+    attr_accessor :value
+  end
 
+  class InternalNode < Node
+    attr_accessor :left_child, :right_child
+
+    def children
+      nodes = Array.new
+      nodes << @left_child unless @left_child.nil?    
+      nodes << @right_child unless @right_child.nil?
+      return nodes
+    end
+  end
+
+
+  class DataNode < Node    
+    @original_value
+    def value= v
+      @original_value = v if @original_value.nil?
+      @value = v     
+    end
+
+    def value 
+      return @value
+    end
+
+    def error
+      return (@original_value - @value).abs
+    end
+  end
+end
+
+
+class ErrorTree # For implementation
 
   # Make a error tree using given data
   def initialize data
@@ -101,7 +99,6 @@ class ErrorTree
   
   # return the set of data node in the subtree rooted at given node
   def leaves_rooted_at_node node
-
     #using breadth first search
     result = Array.new
     queue = Array.new # In this function, we handle a array as queue 
@@ -179,8 +176,6 @@ class ErrorTree
     leaf_nodes = self.leaves(k)
     errors = leaf_nodes.map do |data_node|
 
-
-      
       if self.left_leaves(k).index(data_node) 
         sign_factor = +1
       else

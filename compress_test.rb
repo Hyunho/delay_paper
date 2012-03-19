@@ -6,7 +6,7 @@ require 'matrix'
 class ErrorTreeTest < Test::Unit::TestCase
 
   def test_node
-    data_node = DataNode.new
+    data_node = ErrorTree::DataNode.new
     data_node.value = 10
     data_node.value = 20
     assert_equal(10, data_node.error)
