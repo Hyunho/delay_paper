@@ -1,0 +1,5 @@
+#! /bin/bash
+#this file is document generator for delay project
+cd ..
+rm -rf doc
+rdoc --exclude test
