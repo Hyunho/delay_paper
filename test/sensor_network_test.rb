@@ -1,56 +1,52 @@
-require 'main'
+require '../lib/sensor_network'
 require 'test/unit'
 
-class MainTest < Test::Unit::TestCase
+class SensorNetworkTest < Test::Unit::TestCase
 
-  def setup
-    @sensor = Sensor.new
-  end
-
-  def teardown
-  end
-
-  def test_sampling
-
-   
-    sensor = Sensor.new
-    data = sensor.sample
-    assert_nil(data)
+  #= it's for the estimation model
+  def testSensores
     
-    sensor.sample_data = [1,2,3,4,5]
-    for expected_data in 1..5
-      assert_equal(expected_data, sensor.sample)
-    end
-    assert_nil(sensor.sample)
- end
-
-  def test_computation
-  end
-    
-  def test_communication
+    data =  [1,2,3,4,3,3,2,4]
+    sensor = Sensor.new  
     base_station = BaseStation.instance
-    sensor = Sensor.new
-
-    base_station.receive(3)
-    assert_equal(3, base_station.received_data) 
     
-    sensor.send(2)
-    assert_equal(1, sensor.sent_count)
-    assert_equal(2, base_station.received_data)
+    # until 1 > data.size
+    #   sensor.sample data.slice! 0
+    #   sensor.compute
+    #   sensor.transmit
+    # end
+    
+
+  end
+  
+  
+  # it's for haar wavlet data reduction
+  def test2
+    @data = [11, -1 ,-6 ,8 ,-2 ,6 ,6 ,10]
+
+  end
+end
+
+
+class SlidingWindowTest < Test::Unit::TestCase
+
+  def testPutAndRemove
+    slidingWindow = SlidingWindow.new(width = 3)
+
+    slidingWindow.add Tuple.new(0, 10)
+    slidingWindow.add Tuple.new(1, 11)
+    slidingWindow.add Tuple.new(2, 12)
+    slidingWindow.add Tuple.new(3, 13)   
+    assert_equal(3, slidingWindow.size)
+    slidingWindow.add Tuple.new(4, 13) 
+    assert_equal(3, slidingWindow.size)  
+    
   end
 
+  
 end
+
 
 class BaseStationTest 
 end
-
-
-def global_test
-  sensor = Sensor.new
-  sensor.sample_data = [1,2,3,4,5,6,7,8,9]
-  sensor.forward_step
-  puts sensor.sent_count
-end
-
-global_test
 
