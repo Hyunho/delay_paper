@@ -44,12 +44,6 @@ end
 class CompressionTest < Test::Unit::TestCase
 
 
-  def test_convert
-    assert_equal([2,3], Matrix.to_1D_array(Matrix.row_vector([2,3])))
-    assert_equal([2,3,3,4], Matrix.to_1D_array(Matrix[[2,3],[3,4]]))
-    assert_equal([2,3,3,4], Matrix.to_1D_array(Matrix[[2,3,3,4]]))
-  end
-
   def test_haar
 
     assert_equal([7,1,1,0], Compression.haar_transform([9,7,6,6]))
@@ -63,7 +57,7 @@ class CompressionTest < Test::Unit::TestCase
                
     assert_equal(test_data["cofficients"], Compression.haar_transform(test_data["original"]))
     assert_equal(test_data["original"], Compression.inverse_haar_transform(test_data["cofficients"]))
-    assert_equal(0, Compression.max_error(test_data["original"], Compression.inverse_haar_transform(test_data["cofficients"])))
+
   end
 
   def test_regression

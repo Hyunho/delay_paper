@@ -186,8 +186,6 @@ class ErrorTree # For implementation
   end
 end
 
-
-
 module Compression
 
   def Compression.haar_transform array
@@ -250,25 +248,3 @@ module Compression
     return a ,b
   end
 end
-
-class Matrix
-  def Matrix.to_1D_array matrix
-    queue = Array.new
-    result = Array.new
-    queue.insert(0, matrix.to_a)
-    
-    # using breadth first search 
-    while !queue.empty?
-      item = queue.pop
-      if item.class == Array
-        item.each do |vertex|
-          queue.insert(0, vertex)
-        end  
-      else
-        result << item
-      end
-    end
-    return result
-  end
-end
-
