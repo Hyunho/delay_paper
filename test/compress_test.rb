@@ -1,7 +1,6 @@
-require 'compress'
+require '../lib/compress'
+require '../lib/sensor_network'
 require 'test/unit'
-require 'matrix'
-
 
 class ErrorTreeTest < Test::Unit::TestCase
 
@@ -15,8 +14,8 @@ class ErrorTreeTest < Test::Unit::TestCase
   def test_error_tree
     data = [11, -1, -6, 8, -2, 6, 6, 10]
     coefficients  = [4,-1,2,-3,6,-7, -4, -2]
+
     error_tree = ErrorTree.new(data)
-    
     assert_equal(data, error_tree.leaf_nodes.map { |node| node.value })
     assert_equal(coefficients , error_tree.internal_nodes.map { |node| node.value})
 
@@ -30,8 +29,12 @@ class ErrorTreeTest < Test::Unit::TestCase
     
     # Test maximum potential absolute error
     assert_equal(2, error_tree.maximum_potential_absolute_error(index = 2))
-    assert_equal(coefficients.map { |coefficient| coefficient.abs} , 
-                 (0..7).map { |k| error_tree.maximum_potential_absolute_error(k) })
+    assert_equal(coefficients.map do
+                   |coefficient| coefficient.abs
+                 end,                 
+                 (0..7).map do |k|
+                   error_tree.maximum_potential_absolute_error(k) 
+                 end)
 
     
   end
@@ -64,11 +67,10 @@ class CompressionTest < Test::Unit::TestCase
   end
 
   def test_regression
-    test_data = [1,2,3,4,5,6,7,8]
-    cofficient = {"hat_a" => 0.0, "hat_b" => 1.0}
-    assert_equal(cofficient, Compression.regression(test_data))
-    assert_equal(test_data, Compression.inverse_regression(cofficient, size = 8))
-    assert_equal(0, Compression.max_error(Compression.inverse_regression(cofficient,8), test_data))
+    test_data = (1..10).map do |i|
+      Tuple.new(i, i)
+    end
+    assert_equal([1.0, 0.0], Compression.regression(test_data))
   end
 end
 

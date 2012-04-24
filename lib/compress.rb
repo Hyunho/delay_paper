@@ -38,7 +38,6 @@ class ErrorTree # for nested class
   end
 end
 
-
 class ErrorTree # For implementation
 
   # Make a error tree using given data
@@ -225,46 +224,30 @@ module Compression
   end
 
 
-  def Compression.regression array    
-    sum_v = array.reduce(:+)
-    mean_v = sum_v.to_f / array.size.to_f 
+  # return regression coefficient variables at given tuples
+  def Compression.regression tuples
 
-    sum_t = (1..array.size).reduce(:+)
-    mean_t = sum_t.to_f / array.size.to_f
-    
-    numerator = 0
-    (1..array.size).each do |i|
-      t=i 
-      numerator = numerator + (t - mean_t) *(array[i-1] - mean_v)
+    sum_value = tuples.reduce(0) do |sum, tuple|
+      sum + tuple.value
+    end
+    mean_value = sum_value.to_f / tuples.size.to_f
+
+    sum_time = tuples.reduce(0) do |sum, tuple|
+      sum + tuple.time
+    end
+    mean_time = sum_time.to_f / tuples.size.to_f
+
+    denominator = tuples.reduce(0) do |sum, tuple|
+      sum + (tuple.time - mean_time)**2
     end
 
-    denominator = 0
-    (1..array.size).each do |i|
-      t = i
-      denominator = denominator + (t - mean_t)**2
+    numerator = tuples.reduce(0) do |sum, tuple|
+      sum + ((tuple.time - mean_time)*(tuple.value - mean_value))
     end
 
-    hat_b = numerator / denominator 
-    hat_a = mean_v - hat_b * mean_t
-    
-    return cofficient = { "hat_a" => hat_a , "hat_b" => hat_b}
-  end
-
-  def Compression.inverse_regression cofficient, size
-    data = Array.new
-    (1..size).each { |t| data << cofficient["hat_a"] + cofficient["hat_b"] * t}
-    return data
-  end
-
-  def Compression.max_error original_data, inversed_data
-    max_error = 0
-    inversed_data.each_index do |index|
-      error = (original_data[index] - inversed_data[index]).abs
-      if ( error > max_error)
-        max_error = error
-      end
-    end
-    return max_error
+    a = numerator/ denominator
+    b = mean_value - a * mean_time
+    return a ,b
   end
 end
 
