@@ -4,39 +4,67 @@ require 'test/unit'
 
 class ErrorTreeTest < Test::Unit::TestCase
 
-  def test_node
-    data_node = ErrorTree::DataNode.new
-    data_node.value = 10
-    data_node.value = 20
-    assert_equal(10, data_node.error)
+
+  def setup
+    @data = [11, -1, -6, 8, -2, 6, 6, 10]
+    @coefficients  = [4,-1,2,-3,6,-7, -4, -2]
+    @error_tree = ErrorTree.new(@data)
+
   end
 
-  def test_error_tree
-    data = [11, -1, -6, 8, -2, 6, 6, 10]
-    coefficients  = [4,-1,2,-3,6,-7, -4, -2]
+  def test_make_tree
 
-    error_tree = ErrorTree.new(data)
-    assert_equal(data, error_tree.leaf_nodes.map { |node| node.value })
-    assert_equal(coefficients , error_tree.internal_nodes.map { |node| node.value})
+    assert_equal(@data, @error_tree.data_nodes.map { |node| node.value })
+    assert_equal(@data, @error_tree.internal_nodes(0).leaves.map { |node| node.value })
+    assert_equal(@coefficients , @error_tree.internal_nodes.map { |node| node.value})
 
-    assert_equal(2, error_tree.internal_nodes(index=2).value)
-    assert_equal(-6, error_tree.leaf_nodes(index=2).value)
+    assert_equal(2, @error_tree.internal_nodes(index=2).value)
+    assert_equal(-6, @error_tree.data_nodes(index=2).value)
 
-    # Test to find leaves which satisfy a index 
-    assert_equal([11, -1, -6, 8], error_tree.leaves(index=2).map { |node| node.value })
-    assert_equal([11, -1], error_tree.left_leaves(index=2).map { |node| node.value })
-    assert_equal([-6, 8], error_tree.right_leaves(index=2).map { |node| node.value })
+
+   # Test to find leaves, leaf leaves or leaf leavs of given node with a index 
+    assert_equal([11, -1, -6, 8], @error_tree.internal_nodes(index=2).leaves.map { |node| node.value })
+    assert_equal([11, -1], @error_tree.internal_nodes(index=2).left_leaves.map { |node| node.value })
+    assert_equal([-6, 8], @error_tree.internal_nodes(index=2).right_leaves.map { |node| node.value })
+
+    assert_equal([11], @error_tree.internal_nodes(index=4).left_leaves.map { |node| node.value })
     
-    # Test maximum potential absolute error
-    assert_equal(2, error_tree.maximum_potential_absolute_error(index = 2))
-    assert_equal(coefficients.map do
+    assert_equal(8, @error_tree.internal_nodes(0).leaves.size)
+  end
+
+  # Test maximum potential absolute error
+  def test_maximum_potential_absolute_error
+
+    assert_equal(@coefficients.map do
                    |coefficient| coefficient.abs
                  end,                 
-                 (0..7).map do |k|
-                   error_tree.maximum_potential_absolute_error(k) 
+                 @error_tree.internal_nodes.map do |internal_node|
+                   internal_node.maximum_potential_absolute_error
                  end)
-
     
+    assert_equal(-1, @error_tree.minimum_MA_node.value)
+    @error_tree.minimum_MA_node.discard
+    assert_equal(-2, @error_tree.minimum_MA_node.value)
+    @error_tree.minimum_MA_node.discard 
+    @error_tree.minimum_MA_node.discard 
+    
+    assert_equal(3, @error_tree.max_error)    
+  end
+
+  def test_data_reduction
+    error_bound = 4
+    @error_tree.data_reduction(error_bound)
+    assert_equal(true, @error_tree.max_error  < error_bound)
+    p @error_tree.internal_nodes.map {|node| node.value}
+    
+  end
+
+  def test_discard
+    @error_tree.internal_nodes(1).discard
+    assert_equal([1, 1, 1, 1, 1, 1, 1, 1], @error_tree.data_nodes.map { |node| node.error })
+
+    @error_tree.internal_nodes(0).discard
+    assert_equal([3, 3, 3, 3, 5, 5, 5, 5], @error_tree.data_nodes.map { |node| node.error })
   end
 
 end
