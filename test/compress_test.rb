@@ -3,12 +3,12 @@ require './lib/sensor_network'
 require 'test/unit'
 
 class ErrorTreeTest < Test::Unit::TestCase
-
-
+  
+  
   def setup
     @data = [11, -1, -6, 8, -2, 6, 6, 10]
     @coefficients  = [4,-1,2,-3,6,-7, -4, -2]
-    @error_tree = ErrorTree.new(@data)
+    @error_tree = Compression::ErrorTree.new(@data)
 
   end
 
@@ -64,28 +64,28 @@ class ErrorTreeTest < Test::Unit::TestCase
 
     @error_tree.internal_nodes(0).discard
     assert_equal([3, 3, 3, 3, 5, 5, 5, 5], @error_tree.data_nodes.map { |node| node.error })
-  end
-
+  end  
 end
 
 class CompressionTest < Test::Unit::TestCase
 
+  def test_haar_data_reduction
 
-  def test_haar
+    error_bound  = 4 
 
-    assert_equal([7,1,1,0], Compression.haar_transform([9,7,6,6]))
-    assert_equal([9,7,6,6], Compression.inverse_haar_transform([7,1,1,0]))
+    origin_data = [11, -1, -6, 8, -2, 6, 6, 10]
+    expected_coefficients  = [4, 0, 0,-3,6,-7, -4, 0]
+    expected_data = [10, -2, -3, 11, -3, 5, 7, 7]
 
-    test_data = {
-      "original" => [3,7,5,2,8,5,4,1], 
-      "cofficients" => [4.375,-0.125,0.75,2.0,-2.0,1.5,1.5,1.5],
-      "4_top" => [4.375,-0.125,0.75,2.0, 0 ,0 ,0 ,0]
-    }
-               
-    assert_equal(test_data["cofficients"], Compression.haar_transform(test_data["original"]))
-    assert_equal(test_data["original"], Compression.inverse_haar_transform(test_data["cofficients"]))
+    wavelet = Compression::HaarWavelet.new(origin_data)
+
+    wavelet.reduction(error_bound)
+    assert_equal(expected_coefficients, wavelet.coefficients)
+    assert_equal(expected_data, wavelet.data)
 
   end
+
+
 
   def test_regression
     test_data = (1..10).map do |i|

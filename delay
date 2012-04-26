@@ -1,6 +1,9 @@
 #!/bin/bash
 
 case $1 in
+    run)
+	ruby main.rb
+	;;
     test)
 	
 	echo "test"
@@ -16,9 +19,9 @@ case $1 in
     doc)
 	echo "doc"
 	rm -rf doc
-	rdoc 
+	rdoc --exclude test
 	;;
     *)
 	echo "that option is not recognized"
-	echo "we need a commmand 'test'  or 'doc'";;
+	echo "we need a commmand 'test'  or 'doc' or 'run'";;
 esac
