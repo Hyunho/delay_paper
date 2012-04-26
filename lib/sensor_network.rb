@@ -4,9 +4,11 @@ class SensorNetwork
 
   attr_accessor :sensors
   attr_accessor :base_station
+
   def initialize
     self.sensors = Hash.new
   end
+
   # sensors and base_station is deployed in sensor networks
   def deploy_nodes
     
@@ -39,7 +41,7 @@ class DataGenerator
     begin
       line = @file.readline  
       words = line.split
-      value = words[3]
+      value = words[5]
       value.to_f
     rescue EOFError
       @file.close      
@@ -48,25 +50,50 @@ class DataGenerator
   end
 end
 
+
+module Transmitter
+  
+  #getting energy to tranmit data
+  def Transmitter.energy_tx(bit_size, distance)
+    bit_size * 50*(10**(-9)) + bit_size * (distance**2) * 100*(10**(-12))
+  end
+
+end
+
 class BaseSensor
+
   class << self
     attr_accessor :packet_size 
+
+    #communication distance
+    attr_accessor :distance
   end
 
   attr_accessor :id
+  #position of sensor
   attr_accessor :x, :y
+
   attr_accessor :sent_count
+  
+  #getting packet count which is sent
+  attr_accessor :sent_packet_count
+
 
   
   def initialize(id, x, y, datagen)
     @id = id
-    @sent_count = 0
     @data_generator = datagen
-    @is_alive = true;
-    
-    self.class.packet_size = 1
 
+    @is_alive = true
     @time = 0 
+
+    BaseSensor.distance = 1 if BaseSensor.distance.nil?
+    BaseSensor.packet_size = 1 if BaseSensor.packet_size.nil?
+
+
+    @sent_count = 0    
+    @sent_packet_count = 0
+    @consumed_energy = 0
   end
 
   def forward
@@ -86,8 +113,22 @@ class BaseSensor
   end
   
   def transmit data
-    @sent_count = @sent_count + (data.size / self.class.packet_size)    
+
+    bit_size = data.size * 32    
+    packet_count = (bit_size.to_f / BaseSensor.packet_size.to_f).to_f.ceil
+
+    @sent_count = @sent_count  + 1 unless data.size == 0
+    @sent_packet_count = @sent_packet_count + packet_count
+
+    @consumed_energy = @consumed_energy +
+      Transmitter.energy_tx(packet_count * BaseSensor.packet_size, BaseSensor.distance)
+
   end
+
+  def consumed_energy
+    @consumed_energy
+  end
+  
 end
 
 class RawSensor < BaseSensor

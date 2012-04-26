@@ -17,23 +17,36 @@ end
 class BaseSensorTest < Test::Unit::TestCase
 
   def setup
-    @datagen = DataGeneratorTest::DummyGenerator.new
+    datagen = DataGeneratorTest::DummyGenerator.new
+    @sensor = BaseSensor.new(mote_id = 1, x= 10, y =11, datagen)
   end
-  def test_forward
-    @sensor = BaseSensor.new(mote_id = 1, x= 10, y =11, @datagen)
-    
+
+  def sample
     assert_not_nil(@sensor.sample)
-    assert_equal(0, @sensor.sent_count)
-
-    BaseSensor.packet_size = 1
-    @sensor.transmit (1..10).map {|index| index}
-    assert_equal(10, @sensor.sent_count)
-
-    BaseSensor.packet_size = 10
-    @sensor.transmit (1..10).map {|index| index}
-    assert_equal(11, @sensor.sent_count)
+    assert_equal(0, @sensor.total_packet)
   end
 
+  def test_transmitt
+    BaseSensor.distance = 1
+
+    BaseSensor.packet_size = 32
+    @sensor.transmit Array.new(1)
+
+    assert_equal(1, @sensor.sent_packet_count)
+
+    assert_equal(Transmitter.energy_tx(@sensor.sent_packet_count * BaseSensor.packet_size, BaseSensor.distance), 
+                 @sensor.consumed_energy)
+  end
+
+  def test_energy
+
+    assert_equal(50*(10**(-9)) + 100*(10**(-12)),
+                 Transmitter.energy_tx(bit_size = 1, distance =1))
+
+    assert_equal(2 * 50 * (10**(-9)) + 2 * (2**2) * 100*(10**(-12)), 
+                 Transmitter.energy_tx(bit_size = 2, distance =2))
+
+  end
 end
 
 class SubSensorTest < Test::Unit::TestCase
