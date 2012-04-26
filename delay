@@ -6,7 +6,9 @@ case $1 in
 	echo "test"
 
 	echo
-	ruby $2
+	ruby ./test/compress_test.rb
+	ruby ./test/sensor_network_test.rb
+
 	;;
 #	echo $TEST_FILE;;
 #	ruby "./test/" + $2

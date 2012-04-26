@@ -1,15 +1,48 @@
-class Sensor
 
-  attr_accessor :id, :sent_count
-  
-  def initialize(id = 0)
-    @id = id
-    @sample_data = Array.new
-    @sent_count = 0
+
+class SensorNetwork
+
+  attr_accessor :sensors
+  attr_accessor :base_station
+  def initialize
+    self.sensors = Hash.new
   end
 
-  def sample_data= (data)
-    @sample_data = data.reverse
+
+  
+  def deploy_nodes
+    
+    file = File.open("./resource/mote_locs.txt")
+    self.base_station = BaseStation.new(x = 20, y =20)
+   
+    begin
+      while line = file.readline
+
+        words = line.split
+        moteid = words[0]
+        x = words[1]
+        y = words[2]          
+        sensors[moteid] = Sensor.new(moteid, x, y)
+      end
+    rescue EOFError
+
+      file.close
+    end
+
+  end
+end
+
+
+class Sensor
+  attr_accessor :id
+  attr_accessor :x, :y
+  attr_accessor :sent_count
+  
+  def initialize(id, x, y)
+    @id = id
+
+    @file = File.open("./resource/sensors/" + id.to_s + ".txt")
+
   end
 
   def forward_step
@@ -18,7 +51,8 @@ class Sensor
     send(data)
   end
 
-  def sample data
+  def sample 
+
   end
 
   def compute 
@@ -71,9 +105,14 @@ class SlidingWindow
   end
 end
 
-require 'singleton'
 class BaseStation 
-  include Singleton
+  
+  attr_accessor :x, :y
+
+  def initialize(x, y)
+    self.x = x
+    self.y = y
+  end
 
   @received_data
 

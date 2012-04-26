@@ -1,5 +1,5 @@
-require '../lib/compress'
-require '../lib/sensor_network'
+require './lib/compress'
+require './lib/sensor_network'
 require 'test/unit'
 
 class ErrorTreeTest < Test::Unit::TestCase
@@ -55,7 +55,6 @@ class ErrorTreeTest < Test::Unit::TestCase
     error_bound = 4
     @error_tree.data_reduction(error_bound)
     assert_equal(true, @error_tree.max_error  < error_bound)
-    p @error_tree.internal_nodes.map {|node| node.value}
     
   end
 

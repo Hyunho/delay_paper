@@ -1,29 +1,23 @@
-require '../lib/sensor_network'
+require './lib/sensor_network'
 require 'test/unit'
 
 class SensorNetworkTest < Test::Unit::TestCase
 
-  #= it's for the estimation model
-  def testSensores
-    
-    data =  [1,2,3,4,3,3,2,4]
-    sensor = Sensor.new  
-    base_station = BaseStation.instance
-    
-    # until 1 > data.size
-    #   sensor.sample data.slice! 0
-    #   sensor.compute
-    #   sensor.transmit
-    # end
-    
-
+  def test_deploy
+    network = SensorNetwork.new
+    assert_equal(0, network.sensors.size)
+    assert_equal(nil, network.base_station)
+ 
+    network.deploy_nodes
+    assert_not_nil(network.base_station)
+    assert_equal(54, network.sensors.size)
   end
-  
-  
-  # it's for haar wavlet data reduction
-  def test2
-    @data = [11, -1 ,-6 ,8 ,-2 ,6 ,6 ,10]
+end
 
+class SensorTest < Test::Unit::TestCase
+  def test_initialize
+    sensor = Sensor.new(mote_id = 10, x= 10, y =1)
+    assert_not_nil(sensor.sample)
   end
 end
 
@@ -42,8 +36,6 @@ class SlidingWindowTest < Test::Unit::TestCase
     assert_equal(3, slidingWindow.size)  
     
   end
-
-  
 end
 
 
