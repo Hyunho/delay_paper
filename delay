@@ -1,0 +1,22 @@
+#!/bin/bash
+
+case $1 in
+    test)
+	
+	echo "test"
+
+	echo
+	ruby $2
+	;;
+#	echo $TEST_FILE;;
+#	ruby "./test/" + $2
+	
+    doc)
+	echo "doc"
+	rm -rf doc
+	rdoc 
+	;;
+    *)
+	echo "that option is not recognized"
+	echo "we need a commmand 'test'  or 'doc'";;
+esac
