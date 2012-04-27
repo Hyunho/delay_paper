@@ -1,23 +1,64 @@
 require './lib/sensor_network'
 require 'test/unit'
 
+
+class DummyGenerator < DataGenerator
+  
+  def initialize 
+    @data = (11..20).map { |index| index}
+  end
+    
+  def read
+    @data.slice!(0).to_f
+  end
+end
+
 class SensorNetworkTest < Test::Unit::TestCase
 
+
+
   def test_deploy
-    network = SensorNetwork.new
-    assert_equal(0, network.sensors.size)
-    assert_equal(nil, network.base_station)
-    
-    network.deploy_nodes
+
+    network = SensorNetwork.instance
+    network.deploy_nodes RawSensor
     assert_not_nil(network.base_station)
-    assert_equal(54, network.sensors.size)
+
+    assert_equal(55, network.nodes.size)
+
   end
+
+
+  def test_routing
+    
+    network = SensorNetwork.instance
+    Node.distance = 7
+    network.base_station.routing_down
+
+    p network.nodes.values.map { |node| node.hop}
+    result_nodes = network.nodes.values.reject { |node| node.hop != -1}
+    assert_equal(0, result_nodes.size)
+
+
+    node1 = network.nodes["1"];
+    data = node1.forward
+
+    
+
+    assert_equal(true, network.base_station.sensor_data["1"].size > 0)
+
+  end
+
+  def test_on_air
+ 
+  end
+ 
+
 end
 
 class BaseSensorTest < Test::Unit::TestCase
 
   def setup
-    datagen = DataGeneratorTest::DummyGenerator.new
+    datagen = DummyGenerator.new
     @sensor = BaseSensor.new(mote_id = 1, x= 10, y =11, datagen)
   end
 
@@ -26,15 +67,15 @@ class BaseSensorTest < Test::Unit::TestCase
     assert_equal(0, @sensor.total_packet)
   end
 
-  def test_transmitt
-    BaseSensor.distance = 1
+  def test_transmission_cost
+    Node.distance = 1
 
-    BaseSensor.packet_size = 32
-    @sensor.transmit Array.new(1)
+    Node.packet_size = 32
+    @sensor.charge_cost [0]
 
     assert_equal(1, @sensor.sent_packet_count)
 
-    assert_equal(Transmitter.energy_tx(@sensor.sent_packet_count * BaseSensor.packet_size, BaseSensor.distance), 
+    assert_equal(Transmitter.energy_tx(@sensor.sent_packet_count * Node.packet_size, Node.distance), 
                  @sensor.consumed_energy)
   end
 
@@ -47,12 +88,14 @@ class BaseSensorTest < Test::Unit::TestCase
                  Transmitter.energy_tx(bit_size = 2, distance =2))
 
   end
+
+
 end
 
 class SubSensorTest < Test::Unit::TestCase
 
   def setup
-    @datagen = DataGeneratorTest::DummyGenerator.new
+    @datagen = DummyGenerator.new
   end
 
   def test_raw_sensor
@@ -62,20 +105,20 @@ class SubSensorTest < Test::Unit::TestCase
   end
 
   def test_temporal_sensor 
-    sensor = TemporalSensor.new(mote_id = 1, x= 10, y= 11, @datagen, error_bound =3)
+    sensor = TemporalSensor.new(mote_id = 1, x= 10, y= 11, @datagen)
     (1..10).each {sensor.forward}
     assert_equal(4, sensor.sent_count)   
   end
 
   def test_prediction_sensor
-    sensor = PredictionSensor.new(mote_id = 1, x= 10, y= 11, @datagen, error_bound =3)
+    sensor = PredictionSensor.new(mote_id = 1, x= 10, y= 11, @datagen)
     (1..10).each {sensor.forward}
     assert_equal(3, sensor.sent_count)   
   end
 
   def test_delay_sensor
 
-    sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, @datagen, error_bound =3)
+    sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, @datagen)
     (1..10).each {sensor.forward}
     assert_equal(2, sensor.sent_count)   
   end
@@ -84,16 +127,6 @@ end
 
 
 class DataGeneratorTest < Test::Unit::TestCase
-  class DummyGenerator < DataGenerator
-
-    def initialize 
-      @data = (11..20).map { |index| index}
-    end
-    
-    def read
-      @data.slice!(0).to_f
-    end
-  end
   
   def test_generate
     gen = DataGenerator.new(file_name= "./resource/sensors/1.txt" )

@@ -1,35 +1,40 @@
 require './lib/compress'
+require 'singleton'
 
 class SensorNetwork
+  include Singleton
 
-  attr_accessor :sensors
+  attr_accessor :nodes
   attr_accessor :base_station
 
   def initialize
-    self.sensors = Hash.new
+    @nodes = Hash.new
   end
 
   # sensors and base_station is deployed in sensor networks
-  def deploy_nodes
+  def deploy_nodes sensor_class
     
     file = File.open("./resource/mote_locs.txt")
-    self.base_station = BaseStation.new(x = 20, y =20)
+    @base_station = BaseStation.new(x = 20, y =20)
+    @nodes["0"] = @base_station
    
     begin
       while line = file.readline
 
         words = line.split
+
         moteid = words[0]
-        x = words[1]
-        y = words[2]          
+        x = words[1].to_f
+        y = words[2].to_f
         
         datagen = DataGenerator.new "./resource/sensors/" + moteid + ".txt"
-        sensors[moteid] = BaseSensor.new(moteid, x, y, datagen)
+        @nodes[moteid] = sensor_class.new(moteid, x, y, datagen)
       end
     rescue EOFError
       file.close
     end
   end
+
 end
 
 class DataGenerator
@@ -60,95 +65,190 @@ module Transmitter
 
 end
 
-class BaseSensor
+
+class Node
 
   class << self
-    attr_accessor :packet_size 
 
     #communication distance
     attr_accessor :distance
+    attr_accessor :packet_size 
   end
 
-  attr_accessor :id
-  #position of sensor
-  attr_accessor :x, :y
 
   attr_accessor :sent_count
   
   #getting packet count which is sent
   attr_accessor :sent_packet_count
 
+  #position of sensor
+  attr_accessor :x, :y
+  attr_accessor :hop
 
+
+  def initialize(x, y)
+    @x = x
+    @y = y
+    @hop = -1
+
+    Node.distance = 1 if Node.distance.nil?
+  end
+
+  def broadcast data = nil
+
+    self.charge_cost(data[:data]) unless data.nil?
+
+    message = {:hop => @hop, :data => data}
+    received_nodes = Array.new
+
+    for node in SensorNetwork.instance.nodes.values      
+      distance = Math.sqrt((@x - node.x)**2 + (@y - node.y)**2)
+      if distance < Node.distance
+        response = node.receive(message)
+        received_nodes << node if response == true
+      end
+    end
+    return received_nodes
+  end
+
+   
+  def charge_cost data
+    bit_size = data.size * 32    
+    packet_count = (bit_size.to_f / Node.packet_size.to_f).to_f.ceil
+    
+    @sent_count = @sent_count  + 1 unless data.size == 0
+    @sent_packet_count = @sent_packet_count + packet_count
+    
+    @consumed_energy = @consumed_energy +
+      Transmitter.energy_tx(packet_count * Node.packet_size, Node.distance)
+  end
+ 
   
+  def receive message
+  end
+
+end
+
+class BaseStation < Node
+  
+  attr_accessor :sensor_data
+
+  def initialize(x,y)
+    super
+    @sensor_data = {}
+    @hop = 0
+  end
+
+  def routing_down    
+    queue= Array.new
+    queue.insert(0, self)
+    until queue.empty?
+      node = queue.pop
+      
+      received_nodes = node.broadcast
+      
+      for rnode in received_nodes
+        queue.insert(0,rnode)
+      end
+    end
+  end
+  
+  def receive message
+    unless message[:data].nil?
+      id = message[:data][:id]
+      sensor_data[id] = message[:data]
+    end
+    return false
+  end
+
+end
+
+
+class BaseSensor < Node
+
+  attr_accessor :id
+ 
   def initialize(id, x, y, datagen)
+    super(x,y)
+
     @id = id
     @data_generator = datagen
 
     @is_alive = true
     @time = 0 
 
-    BaseSensor.distance = 1 if BaseSensor.distance.nil?
-    BaseSensor.packet_size = 1 if BaseSensor.packet_size.nil?
-
+    Node.packet_size = 1 if Node.packet_size.nil?
 
     @sent_count = 0    
     @sent_packet_count = 0
     @consumed_energy = 0
   end
 
+
   def forward
     value = self.sample
     data = compute value
-    self.transmit data
-  end
 
+    unless data.size == 0
+      routing_up ({:id => @id, :data => data})
+    end
+  end
 
   def sample 
     @time = @time + 1
     @data_generator.read
   end
 
-  def compute data    
-    
+  def compute value
+    [value]
   end
   
-  def transmit data
+  def routing_up data
 
-    bit_size = data.size * 32    
-    packet_count = (bit_size.to_f / BaseSensor.packet_size.to_f).to_f.ceil
-
-    @sent_count = @sent_count  + 1 unless data.size == 0
-    @sent_packet_count = @sent_packet_count + packet_count
-
-    @consumed_energy = @consumed_energy +
-      Transmitter.energy_tx(packet_count * BaseSensor.packet_size, BaseSensor.distance)
-
+    queue= Array.new
+    queue.insert(0, self)
+    
+    until queue.empty?
+      node = queue.pop
+      
+      received_nodes = node.broadcast(data)
+      
+      for rnode in received_nodes
+         queue.insert(0,rnode)
+       end
+    end
   end
 
+
+  def receive message
+    if @hop == -1
+      @hop = message[:hop] + 1
+      return true
+    elsif @hop < message[:hop]
+      return true
+    else
+      return false
+    end
+  end
+ 
+  
   def consumed_energy
     @consumed_energy
-  end
-  
+  end 
 end
 
 class RawSensor < BaseSensor
 
-  def forward
-    value = self.sample
-    data = compute value
-    self.transmit data
-  end
-
-  def compute value
-    [value]
-  end
 end
 
 class ApproximationSensor < BaseSensor
-  
-  def initialize(id, x, y, datagen, error_bound)
+  class << self
+    attr_accessor :error_bound
+  end
+
+  def initialize(id, x, y, datagen)
     super(id, x, y, datagen)
-    @error_bound = error_bound
+    ApproximationSensor.error_bound = 3 if ApproximationSensor.error_bound.nil?
   end
 end
 
@@ -156,13 +256,13 @@ end
 class TemporalSensor < ApproximationSensor
   @sent_value
 
-  def initialize(id, x, y, datagen, error_bound)
+  def initialize(id, x, y, datagen)
     super
     @sent_value =0
   end
   
   def compute value
-    if (@sent_value - value).abs < @error_bound
+    if (@sent_value - value).abs < ApproximationSensor.error_bound
       return []
     else
       @sent_value = value
@@ -174,7 +274,7 @@ end
 
 class PredictionSensor < ApproximationSensor
 
-  def initialize(id, x, y, datagen, error_bound)
+  def initialize(id, x, y, datagen)
     super
     @alpha = 0
     @beta = 0
@@ -184,7 +284,7 @@ class PredictionSensor < ApproximationSensor
 
   def compute value
     @sliding_window.add Tuple.new(@time, value)
-    if ((@alpha * @time +  @beta) - value).abs < @error_bound
+    if ((@alpha * @time +  @beta) - value).abs < ApproximationSensor.error_bound
       return []
     else
       @alpha, @beta = Compression.regression(@sliding_window.tuples) if @sliding_window.tuples.size > 2
@@ -195,7 +295,7 @@ end
 
 class DelaySensor < ApproximationSensor
 
-  def initialize(id, x, y, datagen, error_bound)
+  def initialize(id, x, y, datagen)
     super
     @alpha = 0
     @beta = 0
@@ -209,14 +309,14 @@ class DelaySensor < ApproximationSensor
     @sliding_window.add Tuple.new(@time, value)
 
 
-    if ((@alpha * (@time - @sliding_window.width + 1) +  @beta) - @sliding_window.tuples[0].value).abs < @error_bound or @time - @sliding_window.width < @sent_period
+    if ((@alpha * (@time - @sliding_window.width + 1) +  @beta) - @sliding_window.tuples[0].value).abs < ApproximationSensor.error_bound or @time - @sliding_window.width < @sent_period
       return []
     else
     
       array =  @sliding_window.tuples.map { |tuple| tuple.value}
       
       wavelet = Compression::HaarWavelet.new(array)
-      wavelet.reduction @error_bound
+      wavelet.reduction ApproximationSensor.error_bound
 
       @sent_period = @time
       
@@ -269,23 +369,5 @@ class SlidingWindow
     end
   end
   
-end
-
-class BaseStation 
-  
-  attr_accessor :x, :y
-
-  def initialize(x, y)
-    self.x = x
-    self.y = y
-  end
-
-  def receive(data)
-    @recieved_data = data
-  end
-
-  def received_data
-    return @recieved_data
-  end
 end
 

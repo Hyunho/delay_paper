@@ -1,9 +1,10 @@
 require "lib/sensor_network"
 
 
-error_bound = 0.1
-BaseSensor.packet_size = 20
-BaseSensor.distance = 10
+Node.packet_size = 20
+Node.distance = 10
+ApproximationSensor.error_bound = 0.1
+
  
 def execute sensor
 
@@ -27,13 +28,13 @@ execute sensor
 
 
 gen = DataGenerator.new(file_name = "./resource/sensors/1.txt")
-sensor = TemporalSensor.new(mote_id = 1, x= 10, y= 11, gen, error_bound)
+sensor = TemporalSensor.new(mote_id = 1, x= 10, y= 11, gen)
 execute sensor
 
 gen = DataGenerator.new(file_name = "./resource/sensors/1.txt")
-sensor = PredictionSensor.new(mote_id = 1, x= 10, y= 11, gen, error_bound)
+sensor = PredictionSensor.new(mote_id = 1, x= 10, y= 11, gen)
 execute sensor
 
 gen = DataGenerator.new(file_name = "./resource/sensors/1.txt")
-sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, gen, error_bound)
+sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, gen)
 execute sensor
