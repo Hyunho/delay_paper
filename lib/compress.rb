@@ -245,7 +245,7 @@ module Compression
     
     #We reduce a size of internal node until satisfy error_bound
     def data_reduction error_bound
-      while self.minimum_MA_node.maximum_potential_absolute_error < error_bound
+      while self.minimum_MA_node != nil and self.minimum_MA_node.maximum_potential_absolute_error < error_bound
         self.minimum_MA_node.discard
       end
     end
