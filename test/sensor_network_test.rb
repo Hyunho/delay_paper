@@ -15,26 +15,31 @@ end
 
 class SensorNetworkTest < Test::Unit::TestCase
 
-
-
   def test_deploy
 
-    network = SensorNetwork.instance
+    network = SensorNetwork.new
     network.deploy_nodes RawSensor
     assert_not_nil(network.base_station)
 
-    assert_equal(55, network.nodes.size)
-
+    assert_equal(true,  network.nodes.size>2)
   end
 
 
   def test_routing
     
-    network = SensorNetwork.instance
-    Node.distance = 7
+    network = SensorNetwork.new
+    network.deploy_nodes RawSensor
+
+
+    #in our test file, size of senser network is 41000 * 31000
+    Node.distance = 10000
+    network.base_station.x = network.nodes["42"].x
+    network.base_station.y = network.nodes["42"].y
+
     network.base_station.routing_down
 
-    p network.nodes.values.map { |node| node.hop}
+    assert_equal(true, network.all_routed?)
+
     result_nodes = network.nodes.values.reject { |node| node.hop != -1}
     assert_equal(0, result_nodes.size)
 
@@ -42,13 +47,36 @@ class SensorNetworkTest < Test::Unit::TestCase
     node1 = network.nodes["1"];
     data = node1.forward
 
-    
-
     assert_equal(true, network.base_station.sensor_data["1"].size > 0)
 
   end
 
-  def test_on_air
+  def test_routing2
+
+    network = SensorNetwork.new
+
+    station = BaseStation.new 100, 100
+    near_sensor = BaseSensor.new 1 , 100, 190, nil
+    far_sensor = BaseSensor.new 1 , 100, 300, nil
+
+    network.add(far_sensor)
+    network.add(near_sensor)
+    network.add(station)
+
+
+    assert_equal(0, station.hop)
+    assert_equal(-1, near_sensor.hop)
+    assert_equal(-1, far_sensor.hop)
+
+    
+    assert_equal(2, network.nodes.size)
+    assert_not_nil(network.base_station)
+    station.routing_down
+    
+    assert_equal(1, near_sensor.hop)
+    assert_equal(0, station.hop)
+    assert_equal(-1, far_sensor.hop)
+
  
   end
  

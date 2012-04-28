@@ -2,30 +2,34 @@ require './lib/compress'
 require 'singleton'
 
 class SensorNetwork
-  include Singleton
 
   attr_accessor :nodes
   attr_accessor :base_station
 
   def initialize
     @nodes = Hash.new
+    Node.sensor_network = self
   end
 
   # sensors and base_station is deployed in sensor networks
   def deploy_nodes sensor_class
     
     file = File.open("./resource/mote_locs.txt")
-    @base_station = BaseStation.new(x = 20, y =20)
+    @base_station = BaseStation.new(x = 39500, y =30000)
     @nodes["0"] = @base_station
    
     begin
       while line = file.readline
 
         words = line.split
-
+        
         moteid = words[0]
-        x = words[1].to_f
-        y = words[2].to_f
+
+        km = 1000
+        x = (words[1].to_f) * km
+        y = (words[2].to_f) * km
+        
+        next if moteid == "5"
         
         datagen = DataGenerator.new "./resource/sensors/" + moteid + ".txt"
         @nodes[moteid] = sensor_class.new(moteid, x, y, datagen)
@@ -35,6 +39,23 @@ class SensorNetwork
     end
   end
 
+  def add node
+
+    if node.class == BaseStation
+      
+      @base_station = node
+      @nodes["0"] = node
+    else
+      nodes[node.id] = node
+    end
+  end
+
+  def all_routed? 
+    temp = @nodes.values.reject {|node| node.hop != -1 }
+
+    temp.size == 0 ? true : false
+  end
+  
 end
 
 class DataGenerator
@@ -62,7 +83,6 @@ module Transmitter
   def Transmitter.energy_tx(bit_size, distance)
     bit_size * 50*(10**(-9)) + bit_size * (distance**2) * 100*(10**(-12))
   end
-
 end
 
 
@@ -73,6 +93,7 @@ class Node
     #communication distance
     attr_accessor :distance
     attr_accessor :packet_size 
+    attr_accessor :sensor_network
   end
 
 
@@ -101,7 +122,7 @@ class Node
     message = {:hop => @hop, :data => data}
     received_nodes = Array.new
 
-    for node in SensorNetwork.instance.nodes.values      
+    for node in Node.sensor_network.nodes.values      
       distance = Math.sqrt((@x - node.x)**2 + (@y - node.y)**2)
       if distance < Node.distance
         response = node.receive(message)
@@ -316,7 +337,7 @@ class DelaySensor < ApproximationSensor
       array =  @sliding_window.tuples.map { |tuple| tuple.value}
       
       wavelet = Compression::HaarWavelet.new(array)
-      wavelet.reduction ApproximationSensor.error_bound
+      wavelet.reduction(ApproximationSensor.error_bound)
 
       @sent_period = @time
       

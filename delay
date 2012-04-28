@@ -4,6 +4,12 @@ case $1 in
     run)
 	ruby main.rb
 	;;
+
+    gui)
+
+	echo 'delay GUI is not implements yet'
+	ruby gui.rb
+	;;
     test)
 	
 	echo "test"
