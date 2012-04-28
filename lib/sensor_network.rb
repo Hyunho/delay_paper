@@ -1,5 +1,6 @@
 require './lib/compress'
 require 'singleton'
+require './lib/config'
 
 class SensorNetwork
 
@@ -29,7 +30,7 @@ class SensorNetwork
         x = (words[1].to_f) * km
         y = (words[2].to_f) * km
         
-        next if moteid == "5"
+        next if moteid == "5" or moteid == "15"
         
         datagen = DataGenerator.new "./resource/sensors/" + moteid + ".txt"
         @nodes[moteid] = sensor_class.new(moteid, x, y, datagen)
@@ -120,6 +121,7 @@ class Node
     self.charge_cost(data[:data]) unless data.nil?
 
     message = {:hop => @hop, :data => data}
+
     received_nodes = Array.new
 
     for node in Node.sensor_network.nodes.values      
@@ -129,6 +131,8 @@ class Node
         received_nodes << node if response == true
       end
     end
+
+    
     return received_nodes
   end
 
@@ -299,7 +303,11 @@ class PredictionSensor < ApproximationSensor
     super
     @alpha = 0
     @beta = 0
-    @sliding_window = SlidingWindow.new(width = 4)
+
+
+    width = Config.sliding_window_size.nil? ? 4 : Config.sliding_window_size
+
+    @sliding_window = SlidingWindow.new(width)
   
   end
 
@@ -321,7 +329,9 @@ class DelaySensor < ApproximationSensor
     @alpha = 0
     @beta = 0
 
-    @sliding_window = SlidingWindow.new(width = 4)
+
+    width = Config.sliding_window_size.nil? ? 4 : Config.sliding_window_size
+    @sliding_window = SlidingWindow.new(width)
     @sent_period = @time
   end
   

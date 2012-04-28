@@ -32,17 +32,35 @@ class SensorNetworkTest < Test::Unit::TestCase
 
 
     #in our test file, size of senser network is 41000 * 31000
-    Node.distance = 10000
-    network.base_station.x = network.nodes["42"].x
-    network.base_station.y = network.nodes["42"].y
+    Node.distance = 6001
 
+    nodes = network.nodes
+    network.base_station.x = network.nodes["4"].x
+    network.base_station.y = network.nodes["4"].y
+
+
+    node1 = nodes["17"]
+    node2 = nodes["16"]
+
+    p [node1.x, node1.y]
+    p [node2.x, node2.y]
+
+
+    p Math.sqrt(((node1.x - node2.x)**2 + (node1.y - node2.y)**2))
+
+    
     network.base_station.routing_down
+
+    hop_nodes = network.nodes.values.map { |node| node.hop}
+    p hop_nodes
 
     assert_equal(true, network.all_routed?)
 
-    result_nodes = network.nodes.values.reject { |node| node.hop != -1}
-    assert_equal(0, result_nodes.size)
+    p [network.base_station.x, network.base_station.y]
 
+       result_nodes = network.nodes.values.reject { |node| node.hop != -1}
+    assert_equal(0, result_nodes.size)
+    
 
     node1 = network.nodes["1"];
     data = node1.forward
