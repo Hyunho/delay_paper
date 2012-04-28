@@ -68,7 +68,7 @@ class DataGenerator
     begin
       line = @file.readline  
       words = line.split
-      value = words[5]
+      value = words[6]
       value.to_f
     rescue EOFError
       @file.close      
