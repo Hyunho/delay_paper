@@ -18,7 +18,7 @@ def change_variable packet_size, distance, error_bound, window_size
     network.deploy_nodes sensor_class
     
     for i in (1..1000)
-      print "." if i%1000 == 0
+      print "." if i%100 == 0
 
       network.nodes.values.each do |item|
         item.forward unless item.class == BaseStation
@@ -44,8 +44,7 @@ end
 
 #change_variable(20, 20000, 0.1, 4)
 
-for error_bound in [0.1, 1, 25, 50]
-#  for distance in [6, 12, 18, 25]
+for error_bound in [01, 1, 25, 50]
   for distance in [6.001, 12, 18, 25]
     for window_size in [4, 8, 32]
       for packet in [24, 40, 56, 72]

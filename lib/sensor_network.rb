@@ -15,7 +15,7 @@ class SensorNetwork
   def deploy_nodes sensor_class
     
     file = File.open("./resource/mote_locs.txt")
-    @base_station = BaseStation.new(x = 39500, y =30000)
+    @base_station = BaseStation.new(x = 39.5, y =30)
     @nodes["0"] = @base_station
    
     begin

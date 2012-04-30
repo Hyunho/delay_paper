@@ -32,7 +32,7 @@ class SensorNetworkTest < Test::Unit::TestCase
 
 
     #in our test file, size of senser network is 41000 * 31000
-    Node.distance = 6001
+    Node.distance = 6.001
 
     nodes = network.nodes
     network.base_station.x = network.nodes["4"].x
@@ -62,10 +62,16 @@ class SensorNetworkTest < Test::Unit::TestCase
     assert_equal(0, result_nodes.size)
     
 
-    node1 = network.nodes["1"];
+    node1 = network.nodes["16"];
+
+    assert_equal(true, network.nodes["16"].consumed_energy == 0)
+    assert_equal(true, network.nodes["6"].consumed_energy == 0)
     data = node1.forward
 
-    assert_equal(true, network.base_station.sensor_data["1"].size > 0)
+    assert_equal(true, network.base_station.sensor_data["16"].size > 0)
+    p network.nodes["6"].consumed_energy
+    assert_equal(false, network.nodes["6"].consumed_energy == 0)
+    assert_equal(false, network.nodes["16"].consumed_energy == 0)
 
   end
 
@@ -76,6 +82,8 @@ class SensorNetworkTest < Test::Unit::TestCase
     station = BaseStation.new 100, 100
     near_sensor = BaseSensor.new 1 , 100, 190, nil
     far_sensor = BaseSensor.new 1 , 100, 300, nil
+
+    Node.distance = 100
 
     network.add(far_sensor)
     network.add(near_sensor)
@@ -93,8 +101,9 @@ class SensorNetworkTest < Test::Unit::TestCase
     assert_equal(1, near_sensor.hop)
     assert_equal(0, station.hop)
     assert_equal(-1, far_sensor.hop)
-
  
+    
+    
   end
  
 
