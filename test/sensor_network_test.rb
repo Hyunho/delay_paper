@@ -31,46 +31,26 @@ class SensorNetworkTest < Test::Unit::TestCase
     network.deploy_nodes RawSensor
 
 
-    #in our test file, size of senser network is 41000 * 31000
+    #in our test file, size of senser network is 41 * 31
     Node.distance = 6.001
 
     nodes = network.nodes
     network.base_station.x = network.nodes["4"].x
     network.base_station.y = network.nodes["4"].y
 
-
-    node1 = nodes["17"]
-    node2 = nodes["16"]
-
-    p [node1.x, node1.y]
-    p [node2.x, node2.y]
-
-
-    p Math.sqrt(((node1.x - node2.x)**2 + (node1.y - node2.y)**2))
-
-    
     network.base_station.routing_down
 
-    hop_nodes = network.nodes.values.map { |node| node.hop}
-    p hop_nodes
 
     assert_equal(true, network.all_routed?)
 
-    p [network.base_station.x, network.base_station.y]
-
-       result_nodes = network.nodes.values.reject { |node| node.hop != -1}
-    assert_equal(0, result_nodes.size)
     
 
     node1 = network.nodes["16"];
 
     assert_equal(true, network.nodes["16"].consumed_energy == 0)
-    assert_equal(true, network.nodes["6"].consumed_energy == 0)
     data = node1.forward
 
     assert_equal(true, network.base_station.sensor_data["16"].size > 0)
-    p network.nodes["6"].consumed_energy
-    assert_equal(false, network.nodes["6"].consumed_energy == 0)
     assert_equal(false, network.nodes["16"].consumed_energy == 0)
 
   end
@@ -101,12 +81,103 @@ class SensorNetworkTest < Test::Unit::TestCase
     assert_equal(1, near_sensor.hop)
     assert_equal(0, station.hop)
     assert_equal(-1, far_sensor.hop)
- 
-    
-    
+  
   end
- 
 
+  def test_I_dont_know
+  
+    Node.packet_size = 32
+    Node.distance = 100
+    ApproximationSensor.error_bound = 10
+    DelaySensor.window_size = 4
+
+    network = SensorNetwork.new
+
+    station = BaseStation.new 100, 100
+    hop1 = BaseSensor.new 1 , 100, 190, DummyGenerator.new
+    hop2 = BaseSensor.new 2 , 100, 210, DummyGenerator.new
+
+    network.add(hop2)
+    network.add(hop1)
+    network.add(station)
+
+    assert_equal(3, network.nodes.size)
+
+    station.routing_down
+
+    assert_equal(0, station.hop)
+    assert_equal(1, hop1.hop)
+    assert_equal(2, hop2.hop)
+
+  end
+end
+
+
+class RouteTest < Test::Unit::TestCase
+
+  def setup
+    
+    Node.packet_size = 32
+    Node.distance = 100
+    ApproximationSensor.error_bound = 10
+    DelaySensor.window_size = 4
+    
+    @network = SensorNetwork.new
+    
+    @station = BaseStation.new 100, 100
+    @hop1 = BaseSensor.new 1 , 100, 190, DummyGenerator.new
+    @hop2 = BaseSensor.new 2 , 100, 210, DummyGenerator.new
+    @hop3 = BaseSensor.new 3 , 100, 300, DummyGenerator.new
+
+    @network.add(@hop2)
+    @network.add(@hop3)    
+    @network.add(@hop1)
+    @network.add(@station)
+    assert_equal(4, @network.nodes.size)
+
+
+    assert_equal [@hop2, @station], @hop1.neighbors
+    assert_equal [@hop2], @hop1.no_hop_neighbors
+
+
+    @station.routing_down
+
+    assert_equal(0, @station.hop)
+    assert_equal(1, @hop1.hop)
+    assert_equal(2, @hop2.hop)
+    assert_equal(3, @hop3.hop)
+    
+    assert_equal [@station], @hop1.parents
+    assert_equal [@hop2], @hop1.children
+
+    assert_equal 1, @hop1.broadcast_count
+    assert_equal 1, @hop3.broadcast_count
+    assert_equal 1, @hop2.broadcast_count
+  end
+
+  def test_I_dont_know
+    
+    @hop3.forward
+
+  
+    assert_equal 2, @hop3.broadcast_count
+    assert_equal 2, @hop2.broadcast_count
+    assert_equal 2, @hop1.broadcast_count
+    
+
+  end
+end
+
+class NodeTest < Test::Unit::TestCase
+
+  def test_node
+
+    node = Node.new 10, 10
+
+    node.receive ({:id => "1", :data => [1,2]})
+
+    assert_equal false, node.consumed_energy == 0
+  end
 end
 
 class BaseSensorTest < Test::Unit::TestCase
@@ -150,6 +221,9 @@ class SubSensorTest < Test::Unit::TestCase
 
   def setup
     @datagen = DummyGenerator.new
+    
+    ApproximationSensor.error_bound = 3
+    DelaySensor.window_size = 4
   end
 
   def test_raw_sensor
@@ -171,7 +245,8 @@ class SubSensorTest < Test::Unit::TestCase
   end
 
   def test_delay_sensor
-
+    
+    
     DelaySensor.window_size = 4
     sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, @datagen)
     (1..10).each {sensor.forward}

@@ -110,7 +110,8 @@ class Node
   #position of sensor
   attr_accessor :x, :y
   attr_accessor :hop
-
+  
+  attr_accessor :broadcast_count
 
   def initialize(x, y)
     @x = x
@@ -118,52 +119,85 @@ class Node
     @hop = -1
 
     Node.distance = 1 if Node.distance.nil?
+    @broadcast_count = 0
+    @consumed_energy = 0
+    @sent_packet_count = 0
   end
 
-  def broadcast data = nil
+  
+  def charge_tx_cost data
 
-    self.charge_tx_cost(data[:data]) unless data.nil?
+    @sent_packet_count = @sent_packet_count + self.data_to_packet_count(data)
+    
+    @consumed_energy = @consumed_energy + 
+      Transmitter.energy_tx(data_to_packet_count(data) * Node.packet_size, Node.distance)
+  end
+  
+  
+  def data_to_packet_count data
+    bit_size = data.size * 32
+    packet_count = (bit_size.to_f / Node.packet_size.to_f).to_f.ceil
+  end
+  
+  def charge_rx_cost data
+    @consumed_energy = @consumed_energy +
+      Transmitter.energy_rx(data_to_packet_count(data) * Node.packet_size)
+  end
+ 
 
-    message = {:hop => @hop, :data => data}
-
-    received_nodes = Array.new
-
+  def neighbors
+    neighbors = Array.new
     for node in Node.sensor_network.nodes.values      
       distance = Math.sqrt((@x - node.x)**2 + (@y - node.y)**2)
-      if distance < Node.distance
-        response = node.receive(message)
-        received_nodes << node if response == true
+      if distance < Node.distance and node != self
+        neighbors << node
+      end
+    end
+    neighbors
+  end
+
+  def no_hop_neighbors
+    no_hop = Array.new
+    for node in self.neighbors
+      if node.hop == -1
+        no_hop << node
+      end
+    end
+    no_hop
+  end
+
+  def parents
+    parents = Array.new
+    for node in self.neighbors
+      if node.hop < @hop
+        parents << node
+      end
+    end
+    parents
+  end
+
+  def children
+    children = Array.new
+
+    for node in self.neighbors
+      if node.hop > @hop
+        children << node
       end
     end
 
-    
-    return received_nodes
+    children
   end
+  
 
-   
-  def charge_tx_cost data
-    bit_size = data.size * 32    
-    packet_count = (bit_size.to_f / Node.packet_size.to_f).to_f.ceil
-    
-    @sent_count = @sent_count  + 1 unless data.size == 0
-    @sent_packet_count = @sent_packet_count + packet_count
-    
-    @consumed_energy = @consumed_energy +
-      Transmitter.energy_tx(packet_count * Node.packet_size, Node.distance)
-  end
-
-  def charge_rx_cost data
-    bit_size = data.size * 32    
-    packet_count = (bit_size.to_f / Node.packet_size.to_f).to_f.ceil
-    
-    
-    @consumed_energy = @consumed_energy +
-      Transmitter.energy_rx(packet_count * Node.packet_size)
-  end
- 
+  
+  def consumed_energy
+    @consumed_energy
+  end 
   
   def receive message
+    charge_rx_cost message[:data]
   end
+
 
 end
 
@@ -176,27 +210,27 @@ class BaseStation < Node
     @sensor_data = {}
     @hop = 0
   end
-
-  def routing_down    
+  
+  def routing_down
     queue= Array.new
     queue.insert(0, self)
     until queue.empty?
       node = queue.pop
       
-      received_nodes = node.broadcast
+      node.broadcast_count = node.broadcast_count + 1
+      no_hop_neighbors = node.no_hop_neighbors
       
-      for rnode in received_nodes
-        queue.insert(0,rnode)
+      for no_hop in no_hop_neighbors
+        no_hop.hop = node.hop + 1
+        queue.insert(0,no_hop)
       end
     end
   end
   
   def receive message
-    unless message[:data].nil?
-      id = message[:data][:id]
-      sensor_data[id] = message[:data]
-    end
-    return false
+    super
+    id = message[:id]
+    sensor_data[id] = message[:data]
   end
 
 end
@@ -219,7 +253,7 @@ class BaseSensor < Node
 
     @sent_count = 0    
     @sent_packet_count = 0
-    @consumed_energy = 0
+
   end
 
 
@@ -228,6 +262,7 @@ class BaseSensor < Node
     data = compute value
 
     unless data.size == 0
+      @sent_count = @sent_count + 1
       routing_up ({:id => @id, :data => data})
     end
   end
@@ -241,44 +276,27 @@ class BaseSensor < Node
     [value]
   end
   
-  def routing_up data
+  def routing_up message
 
     queue= Array.new
     queue.insert(0, self)
     
     until queue.empty?
       node = queue.pop
-      
-      received_nodes = node.broadcast(data)
-      
-      for rnode in received_nodes
-         queue.insert(0,rnode)
-       end
+
+      node.broadcast_count = node.broadcast_count + 1
+      node.charge_tx_cost message[:data]
+      parents = node.parents
+
+      for par in parents
+
+        par.receive message
+        queue.insert(0,par)
+      end
     end
   end
 
 
-  def receive message
-    if @hop == -1
-      @hop = message[:hop] + 1
-      return true
-    elsif @hop < message[:hop]
-
-      unless message[:data].nil?
-        charge_rx_cost(message[:data][:data])
-      end    
-      
-
-      return true
-    else
-      return false
-    end
-  end
- 
-  
-  def consumed_energy
-    @consumed_energy
-  end 
 end
 
 class RawSensor < BaseSensor
