@@ -125,7 +125,7 @@ class BaseSensorTest < Test::Unit::TestCase
     Node.distance = 1
 
     Node.packet_size = 32
-    @sensor.charge_cost [0]
+    @sensor.charge_tx_cost [0]
 
     assert_equal(1, @sensor.sent_packet_count)
 

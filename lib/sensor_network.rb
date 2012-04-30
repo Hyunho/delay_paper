@@ -82,6 +82,12 @@ module Transmitter
   def Transmitter.energy_tx(bit_size, distance)
     bit_size * 50*(10**(-9)) + bit_size * (distance**2) * 100*(10**(-12))
   end
+
+  #getting energy to receive data
+  def Transmitter.energy_rx(bit_size)
+    bit_size * 50*(10**(-9))
+  end
+
 end
 
 
@@ -116,7 +122,7 @@ class Node
 
   def broadcast data = nil
 
-    self.charge_cost(data[:data]) unless data.nil?
+    self.charge_tx_cost(data[:data]) unless data.nil?
 
     message = {:hop => @hop, :data => data}
 
@@ -135,7 +141,7 @@ class Node
   end
 
    
-  def charge_cost data
+  def charge_tx_cost data
     bit_size = data.size * 32    
     packet_count = (bit_size.to_f / Node.packet_size.to_f).to_f.ceil
     
@@ -144,6 +150,15 @@ class Node
     
     @consumed_energy = @consumed_energy +
       Transmitter.energy_tx(packet_count * Node.packet_size, Node.distance)
+  end
+
+  def charge_rx_cost data
+    bit_size = data.size * 32    
+    packet_count = (bit_size.to_f / Node.packet_size.to_f).to_f.ceil
+    
+    
+    @consumed_energy = @consumed_energy +
+      Transmitter.energy_rx(packet_count * Node.packet_size)
   end
  
   
@@ -248,6 +263,12 @@ class BaseSensor < Node
       @hop = message[:hop] + 1
       return true
     elsif @hop < message[:hop]
+
+      unless message[:data].nil?
+        charge_rx_cost(message[:data][:data])
+      end    
+      
+
       return true
     else
       return false
