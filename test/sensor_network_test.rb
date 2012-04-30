@@ -80,15 +80,14 @@ class SensorNetworkTest < Test::Unit::TestCase
     network.add(far_sensor)
     network.add(near_sensor)
     network.add(station)
-
+    assert_not_nil(network.base_station)
 
     assert_equal(0, station.hop)
     assert_equal(-1, near_sensor.hop)
     assert_equal(-1, far_sensor.hop)
 
-    
     assert_equal(2, network.nodes.size)
-    assert_not_nil(network.base_station)
+
     station.routing_down
     
     assert_equal(1, near_sensor.hop)
@@ -164,9 +163,17 @@ class SubSensorTest < Test::Unit::TestCase
 
   def test_delay_sensor
 
+    DelaySensor.window_size = 4
     sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, @datagen)
     (1..10).each {sensor.forward}
     assert_equal(2, sensor.sent_count)   
+
+
+    DelaySensor.window_size = 10
+    sensor = DelaySensor.new(mote_id = 1, x= 10, y= 11, @datagen)
+    (1..10).each {sensor.forward}
+    assert_equal(0, sensor.sent_count)   
+
   end
 end
 

@@ -1,6 +1,5 @@
 require './lib/compress'
 require 'singleton'
-require './lib/config'
 
 class SensorNetwork
 
@@ -26,9 +25,8 @@ class SensorNetwork
         
         moteid = words[0]
 
-        km = 1000
-        x = (words[1].to_f) * km
-        y = (words[2].to_f) * km
+        x = words[1].to_f
+        y = words[2].to_f
         
         next if moteid == "5" or moteid == "15"
         
@@ -305,7 +303,7 @@ class PredictionSensor < ApproximationSensor
     @beta = 0
 
 
-    width = Config.sliding_window_size.nil? ? 4 : Config.sliding_window_size
+    width = 3
 
     @sliding_window = SlidingWindow.new(width)
   
@@ -323,15 +321,20 @@ class PredictionSensor < ApproximationSensor
 end
 
 class DelaySensor < ApproximationSensor
+  
 
+  class << self
+    attr_accessor :window_size
+  end
   def initialize(id, x, y, datagen)
     super
+
+    DelaySensor.window_size = 4 if DelaySensor.window_size.nil?
+
     @alpha = 0
     @beta = 0
 
-
-    width = Config.sliding_window_size.nil? ? 4 : Config.sliding_window_size
-    @sliding_window = SlidingWindow.new(width)
+    @sliding_window = SlidingWindow.new(DelaySensor.window_size)
     @sent_period = @time
   end
   
@@ -345,7 +348,7 @@ class DelaySensor < ApproximationSensor
     else
     
       array =  @sliding_window.tuples.map { |tuple| tuple.value}
-      
+
       wavelet = Compression::HaarWavelet.new(array)
       wavelet.reduction(ApproximationSensor.error_bound)
 
@@ -354,6 +357,7 @@ class DelaySensor < ApproximationSensor
       tuples = (0..@sliding_window.tuples.size - 1).map do |index|
         Tuple.new(@sliding_window.tuples[index].time, wavelet.data[index])
       end
+      
 
       @alpha, @beta = Compression.regression(tuples)
       @sent_period = @time
@@ -382,6 +386,9 @@ class SlidingWindow
   # size is number of tuples in sliding window
   attr_accessor :size
   def initialize(width = 0)
+
+    # throw "slding window has to eqale 2^n, but given width is #{width}" if 
+    #   Math.log2(width) == Math.log2(width).to_i
     @tuples = Array.new
     @width = width
   end
