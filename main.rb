@@ -39,18 +39,11 @@ def change_variable packet_size, distance, error_bound, window_size
 
   puts " #{packet_size}, #{distance}, #{ApproximationSensor.error_bound}, #{window_size}, #{run(RawSensor).to_f}, #{run(TemporalSensor).to_f}, #{run(PredictionSensor).to_f}, #{run(DelaySensor).to_f}"
 
-#  puts " #{packet_size}, #{distance}, #{ApproximationSensor.error_bound}, #{window_size}, #{run(TemporalSensor)}"
-
 
 
 end
 
 #change_variable(20, 20000, 0.1, 4)
-
-# error_bound = 10
-# distance = 6.001
-# window_size = 4
-# packet = 32
 
 error_bound = 10
 distance = 12
@@ -62,29 +55,29 @@ for error_bound in [0.1, 1, 10 ,25, 50]
    change_variable(packet, distance, error_bound, window_size)
 end
 
-# error_bound = 10
-# distance = 12
-# window_size = 8
-# packet = 40
+error_bound = 10
+distance = 12
+window_size = 8
+packet = 40
 
-# for distance in [6.001, 12, 18, 25]
-#   change_variable(packet, distance, error_bound, window_size)
-# end
+for distance in [6.001, 12, 18, 25]
+  change_variable(packet, distance, error_bound, window_size)
+end
 
-# error_bound = 10
-# distance = 12
-# window_size = 8
-# packet = 40
+error_bound = 10
+distance = 12
+window_size = 8
+packet = 40
 
-# for window_size in [4, 8, 16,32]
-#   change_variable(packet, distance, error_bound, window_size)
-# end
+for window_size in [4, 8, 16,32]
+  change_variable(packet, distance, error_bound, window_size)
+end
 
-# error_bound = 10
-# distance = 12
-# window_size = 8
-# packet = 40
+error_bound = 10
+distance = 12
+window_size = 8
+packet = 40
 
-# for packet in [24, 40, 56, 72]
-#   change_variable(packet, distance, error_bound, window_size)
-# end
+for packet in [24, 40, 56, 72]
+  change_variable(packet, distance, error_bound, window_size)
+end

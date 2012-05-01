@@ -1,31 +1,104 @@
 require './lib/sensor_network'
-require 'test/unit'
+require 'minitest/unit'
+require 'minitest/autorun'
+require 'minitest/spec'
 
+describe SensorNetwork do
+
+  it "should add basestation or sensor nodes" do
+    network = SensorNetwork.new
+    station = BaseStation.new 100, 100
+    network.add station
+  end
+
+  it "should add sensor nodes" do
+  end
+end
 
 class DummyGenerator < DataGenerator
   
-  def initialize 
-    @data = (11..20).map { |index| index}
+  def initialize data 
+    @data = data
   end
     
   def read
     @data.slice!(0).to_f
   end
 end
+class DummySensorNetworkTest < MiniTest::Unit::TestCase
 
-class SensorNetworkTest < Test::Unit::TestCase
+  def test_dummy_routing
+    Node.packet_size = 32
+    Node.distance = 100
+    ApproximationSensor.error_bound = 10
+    DelaySensor.window_size = 4    
+  
+    @network = SensorNetwork.new
+    
+    @station = BaseStation.new 100, 100
+    @hop1 = BaseSensor.new 1 , 100, 190, DummyGenerator.new((11..20).map { |index| index})
+    @hop2 = BaseSensor.new 2 , 100, 190, DummyGenerator.new((11..20).map { |index| index})
+    @hop3 = BaseSensor.new 3 , 100, 250, DummyGenerator.new((11..20).map { |index| index})
+
+    @network.add(@hop2)
+    @network.add(@hop3)    
+    @network.add(@hop1)
+    @network.add(@station)
+
+    assert_equal(4, @network.nodes.size)
+
+    assert_equal 3, @hop1.neighbors.size
+    assert_equal 2, @hop1.no_hop_neighbors.size
+
+    @station.routing_down
+
+    assert_equal(0, @station.hop)
+    assert_equal(1, @hop1.hop)
+    assert_equal(1, @hop2.hop)
+    assert_equal(2, @hop3.hop)
+    
+    assert_equal [@station], @hop1.parents
+    assert_equal [@hop3], @hop1.children
+
+    assert_equal 1, @hop1.broadcast_count
+    assert_equal 1, @hop3.broadcast_count
+    assert_equal 1, @hop2.broadcast_count
+
+    @hop3.forward
+    
+    assert_equal 2, @hop3.broadcast_count
+    assert_equal 2, @hop2.broadcast_count
+    assert_equal 2, @hop1.broadcast_count    
+
+    assert_equal (Transmitter.energy_tx 32, Node.distance), @hop3.consumed_energy
+    assert_equal (Transmitter.energy_tx(32, Node.distance) +
+                  Transmitter.energy_rx(32)), @hop2.consumed_energy
+
+    assert_equal @hop2.consumed_energy, @hop1.consumed_energy
+
+  end
+  
+end
+
+
+class RealSensorNetworkTest < MiniTest::Unit::TestCase
 
   def test_deploy
 
     network = SensorNetwork.new
     network.deploy_nodes RawSensor
-    assert_not_nil(network.base_station)
+    assert(network.base_station != nil)
 
     assert_equal(true,  network.nodes.size>2)
   end
 
 
-  def test_routing
+end
+
+
+class RouteTest < MiniTest::Unit::TestCase
+
+  def test_real_routing
     
     network = SensorNetwork.new
     network.deploy_nodes RawSensor
@@ -40,10 +113,7 @@ class SensorNetworkTest < Test::Unit::TestCase
 
     network.base_station.routing_down
 
-
     assert_equal(true, network.all_routed?)
-
-    
 
     node1 = network.nodes["16"];
 
@@ -55,120 +125,9 @@ class SensorNetworkTest < Test::Unit::TestCase
 
   end
 
-  def test_routing2
-
-    network = SensorNetwork.new
-
-    station = BaseStation.new 100, 100
-    near_sensor = BaseSensor.new 1 , 100, 190, nil
-    far_sensor = BaseSensor.new 1 , 100, 300, nil
-
-    Node.distance = 100
-
-    network.add(far_sensor)
-    network.add(near_sensor)
-    network.add(station)
-    assert_not_nil(network.base_station)
-
-    assert_equal(0, station.hop)
-    assert_equal(-1, near_sensor.hop)
-    assert_equal(-1, far_sensor.hop)
-
-    assert_equal(2, network.nodes.size)
-
-    station.routing_down
-    
-    assert_equal(1, near_sensor.hop)
-    assert_equal(0, station.hop)
-    assert_equal(-1, far_sensor.hop)
-  
-  end
-
-  def test_I_dont_know
-  
-    Node.packet_size = 32
-    Node.distance = 100
-    ApproximationSensor.error_bound = 10
-    DelaySensor.window_size = 4
-
-    network = SensorNetwork.new
-
-    station = BaseStation.new 100, 100
-    hop1 = BaseSensor.new 1 , 100, 190, DummyGenerator.new
-    hop2 = BaseSensor.new 2 , 100, 210, DummyGenerator.new
-
-    network.add(hop2)
-    network.add(hop1)
-    network.add(station)
-
-    assert_equal(3, network.nodes.size)
-
-    station.routing_down
-
-    assert_equal(0, station.hop)
-    assert_equal(1, hop1.hop)
-    assert_equal(2, hop2.hop)
-
-  end
 end
 
-
-class RouteTest < Test::Unit::TestCase
-
-  def setup
-    
-    Node.packet_size = 32
-    Node.distance = 100
-    ApproximationSensor.error_bound = 10
-    DelaySensor.window_size = 4
-    
-    @network = SensorNetwork.new
-    
-    @station = BaseStation.new 100, 100
-    @hop1 = BaseSensor.new 1 , 100, 190, DummyGenerator.new
-    @hop2 = BaseSensor.new 2 , 100, 210, DummyGenerator.new
-    @hop3 = BaseSensor.new 3 , 100, 300, DummyGenerator.new
-
-    @network.add(@hop2)
-    @network.add(@hop3)    
-    @network.add(@hop1)
-    @network.add(@station)
-    assert_equal(4, @network.nodes.size)
-
-
-    assert_equal [@hop2, @station], @hop1.neighbors
-    assert_equal [@hop2], @hop1.no_hop_neighbors
-
-
-    @station.routing_down
-
-    assert_equal(0, @station.hop)
-    assert_equal(1, @hop1.hop)
-    assert_equal(2, @hop2.hop)
-    assert_equal(3, @hop3.hop)
-    
-    assert_equal [@station], @hop1.parents
-    assert_equal [@hop2], @hop1.children
-
-    assert_equal 1, @hop1.broadcast_count
-    assert_equal 1, @hop3.broadcast_count
-    assert_equal 1, @hop2.broadcast_count
-  end
-
-  def test_I_dont_know
-    
-    @hop3.forward
-
-  
-    assert_equal 2, @hop3.broadcast_count
-    assert_equal 2, @hop2.broadcast_count
-    assert_equal 2, @hop1.broadcast_count
-    
-
-  end
-end
-
-class NodeTest < Test::Unit::TestCase
+class NodeTest < MiniTest::Unit::TestCase
 
   def test_node
 
@@ -180,15 +139,15 @@ class NodeTest < Test::Unit::TestCase
   end
 end
 
-class BaseSensorTest < Test::Unit::TestCase
+class BaseSensorTest < MiniTest::Unit::TestCase
 
   def setup
-    datagen = DummyGenerator.new
+    datagen = DummyGenerator.new((11..20).map { |index| index})
     @sensor = BaseSensor.new(mote_id = 1, x= 10, y =11, datagen)
   end
 
   def sample
-    assert_not_nil(@sensor.sample)
+    assert_equal(@sensor.sample != nil)
     assert_equal(0, @sensor.total_packet)
   end
 
@@ -217,10 +176,10 @@ class BaseSensorTest < Test::Unit::TestCase
 
 end
 
-class SubSensorTest < Test::Unit::TestCase
+class SubSensorTest < MiniTest::Unit::TestCase
 
   def setup
-    @datagen = DummyGenerator.new
+    @datagen = DummyGenerator.new((11..20).map { |index| index})
     
     ApproximationSensor.error_bound = 3
     DelaySensor.window_size = 4
@@ -263,19 +222,19 @@ end
 
 
 
-class DataGeneratorTest < Test::Unit::TestCase
+class DataGeneratorTest < MiniTest::Unit::TestCase
   
   def test_generate
     gen = DataGenerator.new(file_name= "./resource/sensors/1.txt" )
-    assert_not_nil(gen.read)   
+    assert(gen.read != nil)   
     assert_equal(Float, gen.read.class)
 
-    gen = DummyGenerator.new
+    gen = DummyGenerator.new((11..20).map { |index| index})
     assert_equal(Float, gen.read.class)
   end
 end
 
-class SlidingWindowTest < Test::Unit::TestCase
+class SlidingWindowTest < MiniTest::Unit::TestCase
 
   def testPutAndRemove
     sliding_window = SlidingWindow.new(width = 3)

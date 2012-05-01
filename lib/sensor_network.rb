@@ -16,7 +16,8 @@ class SensorNetwork
     
     file = File.open("./resource/mote_locs.txt")
     @base_station = BaseStation.new(x = 39.5, y =30)
-    @nodes["0"] = @base_station
+
+    add @base_station
    
     begin
       while line = file.readline
@@ -31,7 +32,8 @@ class SensorNetwork
         next if moteid == "5" or moteid == "15"
         
         datagen = DataGenerator.new "./resource/sensors/" + moteid + ".txt"
-        @nodes[moteid] = sensor_class.new(moteid, x, y, datagen)
+
+        add sensor_class.new(moteid, x, y, datagen)
       end
     rescue EOFError
       file.close
@@ -44,9 +46,47 @@ class SensorNetwork
       
       @base_station = node
       @nodes["0"] = node
+
+      def node.routing_down
+        queue= Array.new
+        queue.insert(0, self)
+        until queue.empty?
+          node = queue.pop
+          
+          node.broadcast_count = node.broadcast_count + 1
+          no_hop_neighbors = node.no_hop_neighbors
+          
+          for no_hop in no_hop_neighbors
+            no_hop.hop = node.hop + 1
+            queue.insert(0,no_hop)
+          end
+        end
+      end
     else
+      
       nodes[node.id] = node
+      def node.routing_up message
+
+        queue= Array.new
+        queue.insert(0, self)
+        
+        until queue.empty?
+          node = queue.pop
+          
+          node.broadcast_count = node.broadcast_count + 1
+          node.charge_tx_cost message[:data]
+          parents = node.parents
+          
+          for par in parents
+
+            par.receive message
+            queue.insert(0,par)
+          end
+        end
+      end
     end
+    
+    
   end
 
   def all_routed? 
@@ -211,22 +251,6 @@ class BaseStation < Node
     @hop = 0
   end
   
-  def routing_down
-    queue= Array.new
-    queue.insert(0, self)
-    until queue.empty?
-      node = queue.pop
-      
-      node.broadcast_count = node.broadcast_count + 1
-      no_hop_neighbors = node.no_hop_neighbors
-      
-      for no_hop in no_hop_neighbors
-        no_hop.hop = node.hop + 1
-        queue.insert(0,no_hop)
-      end
-    end
-  end
-  
   def receive message
     super
     id = message[:id]
@@ -263,7 +287,7 @@ class BaseSensor < Node
 
     unless data.size == 0
       @sent_count = @sent_count + 1
-      routing_up ({:id => @id, :data => data})
+      routing_up ({:id => @id, :data => data}) if respond_to? "routing_up"
     end
   end
 
@@ -276,26 +300,7 @@ class BaseSensor < Node
     [value]
   end
   
-  def routing_up message
-
-    queue= Array.new
-    queue.insert(0, self)
-    
-    until queue.empty?
-      node = queue.pop
-
-      node.broadcast_count = node.broadcast_count + 1
-      node.charge_tx_cost message[:data]
-      parents = node.parents
-
-      for par in parents
-
-        par.receive message
-        queue.insert(0,par)
-      end
-    end
-  end
-
+  
 
 end
 
