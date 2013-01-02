@@ -1,1 +1,2 @@
-hello world!
+This is simulatator which is to show that a delayed transmission and a harr wavelet compression idea  is useful on sensor network. 
+I have knew that our code is ugly for reuse. 
